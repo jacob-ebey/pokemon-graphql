@@ -10,7 +10,7 @@ const db = new Prisma({
 
 const server = new GraphQLServer({
   typeDefs: './src/schema.graphql',
-  resolvers: resolvers as any,
+  resolvers: resolvers,
   context: req => ({ ...req, db }),
 })
 

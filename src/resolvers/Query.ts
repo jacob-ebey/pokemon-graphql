@@ -1,60 +1,83 @@
-import { getUserId } from '../utils'
-import { QueryResolvers } from '../generated/resolvers'
-import { TypeMap } from './types/TypeMap'
+import { Context } from './types/Context';
 
-export interface QueryParent {}
+export const Query = {
+  searchPokemon: (_: any, { query, first, skip, types }: SearchArgs, ctx: Context) => {
+    const where = query && {
+      nameSearch_starts_with: query,
+      OR: [
+        {
+          nameSearch_contains: query
+        }
+      ]
+    };
 
-export const Query: QueryResolvers.Type<TypeMap> = {
-  topExperiences: async (_parent, _args, ctx) => {
-    return ctx.db.experiences({ orderBy: 'popularity_DESC' });
+    return ctx.db.pokemons({
+      first,
+      skip,
+      where: {
+        ...where,
+        AND: types && types.map(type => ({
+          types_some: {
+            english: type
+          }
+        }))
+      }
+    });
   },
-  topHomes: (_parent, _args, ctx) => ctx.db.places({ orderBy: 'popularity_DESC' }),
-  homesInPriceRange: (_parent, { min, max }, ctx) =>
-    ctx.db.places({
-      where: {
-        AND: [
-          { pricing: { perNight_gte: min } },
-          { pricing: { perNight_lte: max } },
-        ],
-      },
-    }),
-  topReservations: (_parent, _args, ctx) =>
-    ctx.db.restaurants({ orderBy: 'popularity_DESC' }),
-  featuredDestinations: (_parent, _args, ctx) =>
-    ctx.db.neighbourhoods({
-      orderBy: 'popularity_DESC',
-      where: { featured: true },
-    }),
-  experiencesByCity: (_parent, { cities }, ctx) =>
-    ctx.db.cities({
-      where: {
-        name_in: cities,
-        neighbourhoods_every: {
-          id_gt: '0',
-          locations_every: {
-            id_gt: '0',
-            experience: {
-              id_gt: '0',
-            },
-          },
-        },
-      },
-    }),
-  viewer: () => ({
-    me: null,
-    bookings: null,
-  }),
-  myLocation: async (_parent, _args, ctx) => {
-    const id = getUserId(ctx)
 
-    const locations = await ctx.db.locations({
-      where: {
-        user: {
-          id,
-        },
-      },
-    })
+  pokemon: (_: any, { id, pokedexNumber }: PokemonArgs, ctx: Context) => {
+    if (id) {
+      return ctx.db.pokemon({ id });
+    }
 
-    return locations && locations[0]
+    if (pokedexNumber) {
+      return ctx.db.pokemon({ pokedexNumber });
+    }
+
+    throw new Error('An id or pokedex number nust be provided.');
   },
+
+  searchItems: (_: any, { query, first, skip }: SearchArgs, ctx: Context) => {
+    return ctx.db.items({
+      first,
+      skip,
+      where: {
+        nameSearch_starts_with: query,
+        OR: [
+          {
+            nameSearch_contains: query
+          }
+        ]
+      }
+    });
+  },
+
+  item: (_: any, { id, pokedexNumber }: PokemonArgs, ctx: Context) => {
+    if (id) {
+      return ctx.db.item({ id });
+    }
+
+    if (pokedexNumber) {
+      return ctx.db.item({ pokedexNumber });
+    }
+
+    throw new Error('An id or pokedex number nust be provided.');
+  },
+}
+
+export interface SearchArgs {
+  query: string;
+  first?: number;
+  skip?: number;
+  types?: string[];
+}
+
+export interface PokemonArgs {
+  id?: string;
+  pokedexNumber?: number;
+}
+
+export interface ItemArgs {
+  id?: string;
+  pokedexNumber?: number;
 }
