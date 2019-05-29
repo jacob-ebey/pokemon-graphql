@@ -1,8 +1,59 @@
-# import * from "./generated/prisma.graphql"
-
 type Query {
-  searchPokemon(query: String, first: Int, skip: Int, types: [String!]): [Pokemon!]!
+  searchPokemon(query: String, first: Int, skip: Int, types: [String!]): PokemonSearchResult
   pokemon(id: ID, pokedexNumber: Int): Pokemon
   searchItems(query: String!, first: Int, skip: Int): [Item!]!
   item(id: ID, pokedexNumber: Int): Item
+}
+
+type PokemonSearchResult {
+  total: Int!
+  results: [Pokemon!]!
+}
+
+type MultiLang {
+  english: String!
+  japanese: String!
+  chinese: String!
+}
+
+type Pokemon {
+  id: ID!
+  pokedexNumber: Int!
+  nameSearch: String!
+  name: MultiLang!
+  types: [PokemonType!]!
+  base: PokemonBaseStats!
+}
+
+type PokemonType {
+  id: ID!
+  english: String!
+  chinese: String!
+  japanese: String!
+}
+
+type PokemonBaseStats {
+  hp: Float!
+  attack: Float!
+  defense: Float!
+  spAttack: Float!
+  spDefense: Float!
+  speed: Float!
+}
+
+type PokemonSkill {
+  id: ID!
+  pokedexNumber: Int!
+  name: MultiLang!
+  accuracy: Int!
+  power: Int!
+  pp: Int!
+  type: PokemonType!
+}
+
+type Item {
+  id: ID!
+  pokedexNumber: Int!
+  nameSearch: String!
+  name: MultiLang!
 }

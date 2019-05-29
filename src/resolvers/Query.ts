@@ -1,31 +1,39 @@
 import { Context } from './types/Context';
 
 export const Query = {
-  searchPokemon: (_: any, { query, first, skip, types }: SearchArgs, ctx: Context) => {
-    const where = query && {
-      nameSearch_starts_with: query,
-      OR: [
+  async searchPokemon(_: any, { query, first, skip, types }: SearchArgs, ctx: Context) {
+    const where = {
+      OR: query ? [
+        {
+          nameSearch_starts_with: query
+        },
         {
           nameSearch_contains: query
         }
-      ]
+      ] : undefined,
+      AND: types ? types.map(type => ({
+        types_some: {
+          english: type
+        }
+      })) : undefined
     };
 
-    return ctx.db.pokemons({
-      first,
-      skip,
-      where: {
-        ...where,
-        AND: types && types.map(type => ({
-          types_some: {
-            english: type
-          }
-        }))
-      }
-    });
+    const [total, results] = await Promise.all([
+      ctx.db.pokemonsConnection({ where }).aggregate().count(),
+      ctx.db.pokemons({
+        first,
+        skip,
+        where
+      })
+    ]);
+
+    return {
+      total,
+      results
+    }
   },
 
-  pokemon: (_: any, { id, pokedexNumber }: PokemonArgs, ctx: Context) => {
+  pokemon(_: any, { id, pokedexNumber }: PokemonArgs, ctx: Context) {
     if (id) {
       return ctx.db.pokemon({ id });
     }
@@ -37,13 +45,15 @@ export const Query = {
     throw new Error('An id or pokedex number nust be provided.');
   },
 
-  searchItems: (_: any, { query, first, skip }: SearchArgs, ctx: Context) => {
+  searchItems(_: any, { query, first, skip }: SearchArgs, ctx: Context) {
     return ctx.db.items({
       first,
       skip,
       where: {
-        nameSearch_starts_with: query,
         OR: [
+          {
+            nameSearch_starts_with: query
+          },
           {
             nameSearch_contains: query
           }
@@ -52,7 +62,7 @@ export const Query = {
     });
   },
 
-  item: (_: any, { id, pokedexNumber }: PokemonArgs, ctx: Context) => {
+  item(_: any, { id, pokedexNumber }: PokemonArgs, ctx: Context) {
     if (id) {
       return ctx.db.item({ id });
     }
